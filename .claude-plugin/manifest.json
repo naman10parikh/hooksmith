@@ -1,0 +1,36 @@
+{
+  "name": "hooksmith",
+  "version": "0.1.0",
+  "description": "Lifecycle-hook generator, linter, and verifier for Claude Code",
+  "author": "Energy fleet",
+  "cli": {
+    "binary": "hooksmith",
+    "entrypoint": "./dist/src/cli.js",
+    "commands": [
+      {
+        "name": "generate",
+        "description": "Emit a hooks block for .claude/settings.json (auto-detects project type)",
+        "usage": "hooksmith generate [project-root] [--project-type=nextjs|node|python|generic] [--recipes=r1,r2]"
+      },
+      {
+        "name": "lint",
+        "description": "Validate an existing hooks block, report violations (exits 1 on errors)",
+        "usage": "hooksmith lint [settings.json path]"
+      },
+      {
+        "name": "verify",
+        "description": "Run a live probe to confirm PreToolUse + PostToolUse actually fire",
+        "usage": "hooksmith verify"
+      }
+    ]
+  },
+  "skills": [
+    ".claude/skills/hook-generate/SKILL.md",
+    ".claude/skills/hook-lint/SKILL.md"
+  ],
+  "subAgents": [
+    ".claude/sub-agents/hook-reviewer.md"
+  ],
+  "catalog": "./catalog/recipes.json",
+  "keywords": ["claude-code", "hooks", "lifecycle", "harness", "settings"]
+}
