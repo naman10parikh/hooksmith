@@ -1,0 +1,25 @@
+# hooksmith
+
+> Private. The lifecycle-hook generator, linter, and verifier for Claude Code — the
+> "hooks" component of the Energy fleet.
+
+## Documentation
+
+- [README.md](README.md): Overview, quick start, recipe catalog, linter violations
+- [AGENTS.md](AGENTS.md): Directory structure, key concepts, how-to guide
+- [CLAUDE.md](CLAUDE.md): Operating handbook for agents — build, test, scope boundaries
+- [identity/SOUL.md](identity/SOUL.md): Who hooksmith is and what it owns
+- [identity/MEMORY.md](identity/MEMORY.md): Hook events reference + recipe catalog
+
+## Core Artifact
+
+- [src/generator.ts](src/generator.ts): `generateHooksBlock()` — emit a hooks block
+- [src/linter.ts](src/linter.ts): `lintHooksBlock()` — validate a hooks block
+- [src/verify.ts](src/verify.ts): `verifyHooksFire()` — prove hooks fire
+- [catalog/recipes.json](catalog/recipes.json): Machine-readable recipe registry
+
+## Notes
+
+- This file follows the llms.txt convention (https://llmstxt.org)
+- hooksmith is a meta-harness: it improves OTHER harnesses' hook blocks
+- The owned artifact is a generator + linter + test harness (TypeScript, no framework deps)

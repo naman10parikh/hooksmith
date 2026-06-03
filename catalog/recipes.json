@@ -1,0 +1,98 @@
+{
+  "version": "1.0.0",
+  "description": "Hooksmith recipe catalog — named lifecycle-hook patterns for Claude Code",
+  "recipes": [
+    {
+      "id": "session-start",
+      "event": "SessionStart",
+      "matcher": null,
+      "description": "Inject CLAUDE.md context + apply budget tier at session start",
+      "scripts": ["session-start-context.sh", "context-monitor.sh"],
+      "projectTypes": ["nextjs", "node", "python", "generic"],
+      "requiredEnv": []
+    },
+    {
+      "id": "compact-restore",
+      "event": "SessionStart",
+      "matcher": "compact",
+      "description": "Re-inject anchor-state after context compaction",
+      "scripts": ["post-compact-restore.sh"],
+      "projectTypes": ["nextjs", "node", "python", "generic"],
+      "requiredEnv": []
+    },
+    {
+      "id": "pre-tool-block",
+      "event": "PreToolUse",
+      "matcher": "Bash",
+      "description": "Block dangerous commands before execution (rm -rf ~, secrets exposure, force push to main)",
+      "scripts": ["block-dangerous-commands.js"],
+      "invokedVia": "node",
+      "timeout": 3000,
+      "projectTypes": ["nextjs", "node", "python", "generic"],
+      "requiredEnv": []
+    },
+    {
+      "id": "post-write-format",
+      "event": "PostToolUse",
+      "matcher": "Write|Edit",
+      "description": "Auto-format written/edited files with prettier",
+      "command": "npx prettier --write \"$CLAUDE_TOOL_INPUT_FILE_PATH\" 2>/dev/null || true",
+      "projectTypes": ["nextjs", "node"],
+      "requiredEnv": []
+    },
+    {
+      "id": "post-push-verify",
+      "event": "PostToolUse",
+      "matcher": "Bash",
+      "description": "After git push, verify production deploy completed (curl prod endpoint)",
+      "scripts": ["post-push-verify.sh"],
+      "projectTypes": ["nextjs", "node"],
+      "requiredEnv": ["PROD_URL"]
+    },
+    {
+      "id": "audit-log",
+      "event": "PostToolUse",
+      "matcher": null,
+      "description": "Log every tool call to an audit trail for session review",
+      "scripts": ["audit-log.sh"],
+      "projectTypes": ["nextjs", "node", "python", "generic"],
+      "requiredEnv": []
+    },
+    {
+      "id": "pre-compact-flush",
+      "event": "PreCompact",
+      "matcher": null,
+      "description": "Flush context to disk before compaction: write handoff + anchor-state + daily log",
+      "scripts": ["pre-compact-memory-flush.sh"],
+      "projectTypes": ["nextjs", "node", "python", "generic"],
+      "requiredEnv": []
+    },
+    {
+      "id": "task-gate",
+      "event": "Stop",
+      "matcher": null,
+      "description": "Block session stop if any tasks are still in_progress (prevents premature exit)",
+      "scripts": ["task-completion-gate.sh"],
+      "projectTypes": ["nextjs", "node"],
+      "requiredEnv": []
+    },
+    {
+      "id": "rate-limit-recover",
+      "event": "StopFailure",
+      "matcher": null,
+      "description": "Handle rate-limit exits gracefully — log and preserve state for resumption",
+      "scripts": ["budget-rate-limit.sh"],
+      "projectTypes": ["nextjs", "node"],
+      "requiredEnv": []
+    },
+    {
+      "id": "session-end-log",
+      "event": "SessionEnd",
+      "matcher": null,
+      "description": "Write a session summary to the daily memory log",
+      "scripts": ["session-end-log.sh"],
+      "projectTypes": ["nextjs", "node", "python", "generic"],
+      "requiredEnv": []
+    }
+  ]
+}
