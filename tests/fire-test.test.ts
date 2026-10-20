@@ -65,7 +65,8 @@ describe("fireTest runs a hook the way Claude Code would (local)", () => {
       if (saved !== undefined) process.env.E2B_API_KEY = saved;
     }
   });
-  it.skipIf(!process.env.E2B_API_KEY)("inside a live E2B microVM the same guard blocks", async () => {
+  // A live run costs one sandbox, so it runs only when asked for: HOOKSMITH_LIVE_E2B=1 and a key.
+  it.skipIf(!(process.env.HOOKSMITH_LIVE_E2B === "1" && process.env.E2B_API_KEY))("inside a live E2B microVM the same guard blocks", async () => {
     const r = await fireTest({ command: "./exit2.sh", cwd: hookDir(), toolInput: { command: "rm -rf /" }, sandbox: "e2b" });
     expect(r).toMatchObject({ ok: true, decision: "block", sandbox: "e2b" });
     expect(r.coldStartMs).toBeGreaterThan(0);

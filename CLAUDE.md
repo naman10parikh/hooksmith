@@ -43,7 +43,7 @@ npx tsx src/cli.ts verify          # starts a real Claude session; run it rarely
   a hooks file is reported back at once. The run-log hooks need `dist/` (run `pnpm build`).
 - **MCP:** the root `.mcp.json` starts the published server through `npx` (safe for anyone who installs the plugin).
   To use this checkout's own build instead, run `claude --mcp-config .mcp.dev.json`.
-- **E2B:** `hooksmith test --sandbox=e2b` reads `E2B_API_KEY` from the environment. Never print it.
+- **E2B:** `hooksmith test --sandbox=e2b` reads `E2B_API_KEY` from the environment. Never print it. `npm test` skips the live E2B test unless `HOOKSMITH_LIVE_E2B=1` is also set, since each run boots a paid sandbox.
 
 ## Scope boundaries
 
