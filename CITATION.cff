@@ -1,0 +1,12 @@
+cff-version: 1.2.0
+message: If you use this software, please cite it as below.
+title: "Hooksmith: Generate, lint and fire-test lifecycle hooks for coding agents."
+type: software
+authors:
+  - family-names: Parikh
+    given-names: Naman
+repository-code: "https://github.com/naman10parikh/hooksmith"
+license: MIT
+version: "0.1.0"
+abstract: "Generate, lint and fire-test lifecycle hooks for coding agents."
+keywords: ["agent-native", "hooks", "claude-code-hooks", "lifecycle-hooks"]
