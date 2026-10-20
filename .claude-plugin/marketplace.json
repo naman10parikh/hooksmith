@@ -1,0 +1,15 @@
+{
+  "name": "hooksmith",
+  "owner": {
+    "name": "Naman Parikh",
+    "url": "https://github.com/naman10parikh"
+  },
+  "description": "Hooksmith, the lifecycle-hooks employee: generate a hooks block, lint it against today's events, and fire-test each hook locally or in an E2B microVM.",
+  "plugins": [
+    {
+      "name": "hooksmith",
+      "source": "./",
+      "description": "Generate, lint and fire-test lifecycle hooks for coding agents."
+    }
+  ]
+}

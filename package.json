@@ -2,23 +2,31 @@
   "name": "hooksmith",
   "version": "0.1.0",
   "private": true,
-  "description": "Lifecycle-hook generator, linter, and verifier for Claude Code — the hooks component of the Energy fleet.",
+  "description": "Generate, lint and fire-test lifecycle hooks for coding agents.",
+  "author": "Naman Parikh (https://github.com/naman10parikh)",
+  "repository": { "type": "git", "url": "git+https://github.com/naman10parikh/hooksmith.git" },
+  "homepage": "https://github.com/naman10parikh/hooksmith#readme",
   "type": "module",
-  "bin": { "hooksmith": "./dist/src/cli.js" },
+  "bin": { "hooksmith": "./dist/src/cli.js", "hooksmith-mcp": "./dist/src/mcp-server.js" },
   "main": "./dist/src/generator.js",
   "types": "./dist/src/generator.d.ts",
   "scripts": {
     "build": "tsc",
     "dev": "tsc --watch",
     "test": "vitest run",
+    "eval": "vitest run evals",
     "test:watch": "vitest",
     "verify": "pnpm build && pnpm test",
-    "hooksmith": "tsx src/cli.ts"
+    "hooksmith": "tsx src/cli.ts",
+    "prepare": "tsc"
   },
-  "files": ["dist/", "catalog/", "README.md"],
+  "files": ["dist/", "catalog/", "identity/", "skills/", "README.md"],
   "engines": { "node": ">=18" },
-  "keywords": ["claude-code", "hooks", "lifecycle", "harness", "agent", "settings"],
-  "license": "UNLICENSED",
+  "keywords": ["claude-code", "hooks", "lifecycle", "harness", "agent", "settings", "agent-native", "self-improving", "mcp", "agent-skills"],
+  "license": "MIT",
+  "optionalDependencies": {
+    "e2b": "^2.56.0"
+  },
   "devDependencies": {
     "@types/node": "^20.14.0",
     "typescript": "^5.5.0",

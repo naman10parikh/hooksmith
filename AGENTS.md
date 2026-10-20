@@ -1,66 +1,67 @@
 # AGENTS.md — Hooksmith
 
-> This file tells AI agents how hooksmith is structured.
+> How any coding agent uses and works on hooksmith. This is the one source; `CLAUDE.md` and `GEMINI.md` point here.
 
-## Domain: lifecycle-hooks (Claude Code `settings.json`)
+## What it does
 
-## Created: 2026-06-03
+Hooksmith owns one part of an agent's harness: the lifecycle **hooks** in Claude Code's `.claude/settings.json`
+(and a plugin's `hooks/hooks.json`). It generates a correct hooks block for a project, lints an existing one against
+today's 33 hook events and 5 handler types, and fire-tests each hook with the JSON event Claude Code would send,
+locally or inside an E2B microVM.
 
-## Directory Structure
+## Tools and how to call them
+
+| Surface | Call | What it returns |
+| ------- | ---- | --------------- |
+| CLI | `npx -y -p github:naman10parikh/hooksmith hooksmith generate <project> [--project-type=nextjs\|node\|python\|generic] [--recipes=a,b]` | A `{ "hooks": ... }` block on stdout |
+| CLI | `hooksmith lint <settings.json>` | Violations with code, JSON path and fix; exit 1 on errors |
+| CLI | `hooksmith test "<hook command>" [--event=PreToolUse] [--tool=Bash] [--input='{...}'] [--expect=block] [--sandbox=e2b]` | The hook's decision, exit code, reason and timing |
+| CLI | `hooksmith test --settings=<settings.json>` | Fires every command hook in the file once |
+| CLI | `hooksmith recall "<query>"` | The best matching sections of hooksmith's own memory |
+| CLI | `hooksmith verify` | Starts a real Claude session to prove events fire (slow; spends a session) |
+| MCP | `hooksmith-mcp` tools `hook_generate`, `hook_lint`, `hook_test` | The same three as JSON-RPC tools over stdio |
+| Skills | `skills/hook-generate`, `skills/hook-lint`, `skills/hook-fire-test` | Step-by-step playbooks for each job |
+| Sub-agents | `.claude/agents/hook-reviewer.md`, `.claude/agents/hook-fire-tester.md` | A reviewer that reads and lints; a tester that runs |
+| Hook | `hooks/settings-guard.mjs` (PostToolUse on Write, Edit, MultiEdit) | Tells the agent when an edited hooks file has errors |
+
+`--sandbox=e2b` needs `E2B_API_KEY` in the environment and uploads only the files the hook command names.
+
+## Layout
 
 ```
-identity/           # Agent identity (SOUL, BRAND, MEMORY, HEARTBEAT)
-  SOUL.md           # Who hooksmith is, what it owns, its boundaries
-  BRAND.md          # Name rationale, tagline, look & feel
-  MEMORY.md         # Bootstrap facts, recipe catalog, patterns
-  HEARTBEAT.md      # Health schedule and recovery protocol
-
-src/                # TypeScript implementation (the owned artifact)
-  generator.ts      # generateHooksBlock() — emits a hooks block by recipe
-  linter.ts         # lintHooksBlock() — validates an existing hooks block
-  verify.ts         # verifyHooksFire() — proves hooks fire in a live session
-  cli.ts            # CLI entry point: generate | lint | verify
-
-evals/              # Evaluation suite (golden tasks)
-  eval.ts           # 3-task eval: generator, linter, verify (vitest)
-
-catalog/            # Machine-readable recipe registry
-  recipes.json      # 10 named recipes with metadata
-
-dist/               # Compiled output (gitignored)
-CLAUDE.md           # Operating handbook for agents
-AGENTS.md           # This file
-README.md           # Human-readable overview
-llms.txt            # AI agent discovery index
-TODOS.md            # Task queue (claim → work → close)
-IMPLEMENTATION-LOG.md  # Append-only action log
+identity/        SOUL, BRAND, HEARTBEAT, MEMORY, LEARNINGS (who hooksmith is, what it learned)
+src/             generator.ts, linter.ts, fire-test.ts, verify.ts, recall.ts, cli.ts, mcp-server.ts, run-log.ts
+catalog/         recipes.json, the named hook recipes the generator emits
+skills/          the three skills
+hooks/           settings-guard.mjs and hooks.json (the plugin's hooks)
+evals/           eval.ts, golden tasks that gate every pull request
+tests/           fire-test and settings-guard tests
+scripts/         mcp-smoke.mjs (MCP end to end), event-drift.mjs (the nightly improvement signal)
+.claude/         settings.json (hooksmith's own hooks), agents/ (the two personas)
+.claude-plugin/  plugin.json and marketplace.json
+dsip.json        the self-improvement contract (honest level L2)
 ```
 
-## Key Concepts
+## Key concepts
 
-**Recipe**: A named, reusable lifecycle-hook pattern (e.g., `pre-tool-block`). Each recipe
-maps to one Claude Code event (SessionStart, PreToolUse, etc.) and contributes one or more
-`HookMatcher` objects to the `hooks` block.
+- **Recipe:** a named hook pattern (for example `pre-tool-block`) tied to one event; `catalog/recipes.json` lists them.
+- **Hooks block:** the object under the `"hooks"` key: event name, then matchers, then handlers.
+- **Decision:** what a hook told Claude Code. Exit code 2 blocks; `hookSpecificOutput.permissionDecision` can allow,
+  deny, ask or defer; `"decision": "block"` or `"continue": false` blocks; anything else passes.
 
-**HooksBlock**: The JSON object that lives at the `"hooks"` key in `settings.json`. It maps
-event names to arrays of `HookMatcher` objects.
+## Working on hooksmith
 
-**HookMatcher**: `{ matcher?: string, hooks: HookEntry[] }`. The `matcher` is matched against
-the tool name (for PreToolUse/PostToolUse) or the word "compact" (for SessionStart).
+1. `pnpm install && pnpm build`
+2. `pnpm test && pnpm eval` must pass (CI runs both on every pull request, plus `node scripts/mcp-smoke.mjs`).
+3. Lint and fire hooksmith's own hooks after touching them:
+   `node dist/src/cli.js lint .claude/settings.json && node dist/src/cli.js test --settings=.claude/settings.json`
+4. New hook events: add them to `VALID_EVENTS` in `src/linter.ts` and to the list in `hooks/settings-guard.mjs`
+   (a test keeps the two equal), with one eval case each.
 
-**Verify**: A live probe that runs a minimal Claude Code session with throwaway hooks and
-checks that receipts were written to disk. This is the evidence that hooks fire.
+## What not to do
 
-## How to Use hooksmith in Another Project
-
-1. Generate: `npx tsx src/cli.ts generate /path/to/project` → copy the `hooks` block
-   into that project's `.claude/settings.json`
-2. Lint: `npx tsx src/cli.ts lint /path/to/project/.claude/settings.json`
-3. Verify: `npx tsx src/cli.ts verify` (requires `claude` CLI on PATH)
-
-## Quality Gate
-
-Before marking any work done:
-1. `pnpm build` — 0 TypeScript errors
-2. `pnpm test` — all eval tasks GREEN
-3. `pnpm verify` if changing generator/linter logic
+- Do not rewrite a project's existing hooks unasked: report violations, let the owner merge the fix.
+- Do not run `hooksmith verify` in a loop or in CI with a logged-in Claude: it starts a real session.
+- Do not write absolute home paths into hook commands; use `$CLAUDE_PROJECT_DIR` or `${CLAUDE_PLUGIN_ROOT}`.
+- Do not print or commit keys. E2B reads `E2B_API_KEY` from the environment only.
+- Do not merge from the improvement loop; it opens issues, a person merges.

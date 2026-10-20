@@ -94,7 +94,7 @@ function buildRecipes(hooksDir: string): Record<RecipeId, HookMatcher[]> {
           {
             type: "command",
             command: `node ${hooksDir}/block-dangerous-commands.js`,
-            timeout: 3000,
+            timeout: 5, // seconds: Claude Code reads hook timeouts in seconds
           },
         ],
       },

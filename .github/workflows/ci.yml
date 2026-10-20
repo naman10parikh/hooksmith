@@ -1,0 +1,24 @@
+name: CI
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  build-test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - run: pnpm install --no-frozen-lockfile
+      - run: pnpm build
+      - run: pnpm test
+      - run: pnpm eval # golden tasks: generator, linter, today's events and handler types
+      - run: node scripts/mcp-smoke.mjs # hooksmith-mcp answers over real stdio
+      - run: node dist/src/cli.js lint .claude/settings.json && node dist/src/cli.js lint hooks/hooks.json
+      - run: node dist/src/cli.js test --settings=.claude/settings.json # every hook of its own fires once

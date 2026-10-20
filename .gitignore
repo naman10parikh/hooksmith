@@ -8,3 +8,7 @@ logs/
 node_modules/
 *.log
 node_modules
+
+# secrets (never commit)
+.env
+.env.*

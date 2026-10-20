@@ -1,0 +1,36 @@
+{
+  "name": "Hooksmith",
+  "description": "Generate, lint and fire-test lifecycle hooks for coding agents.",
+  "url": "https://github.com/naman10parikh/hooksmith",
+  "version": "0.1.0",
+  "provider": {
+    "organization": "Naman Parikh",
+    "url": "https://github.com/naman10parikh"
+  },
+  "capabilities": {
+    "streaming": false
+  },
+  "defaultInputModes": [
+    "text/plain"
+  ],
+  "defaultOutputModes": [
+    "text/plain"
+  ],
+  "skills": [
+    {
+      "id": "hook-generate",
+      "name": "hook-generate",
+      "description": "Generate a hooks block for a project from the recipe catalog, when a project has none or a harness is new."
+    },
+    {
+      "id": "hook-lint",
+      "name": "hook-lint",
+      "description": "Lint a hooks block against today's events and handler types, after any edit or when a hook does not fire."
+    },
+    {
+      "id": "hook-fire-test",
+      "name": "hook-fire-test",
+      "description": "Fire a hook with a synthetic event and read its decision, locally or in an E2B microVM, before trusting a guard."
+    }
+  ]
+}

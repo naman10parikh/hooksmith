@@ -27,7 +27,7 @@
       "description": "Block dangerous commands before execution (rm -rf ~, secrets exposure, force push to main)",
       "scripts": ["block-dangerous-commands.js"],
       "invokedVia": "node",
-      "timeout": 3000,
+      "timeout": 5,
       "projectTypes": ["nextjs", "node", "python", "generic"],
       "requiredEnv": []
     },

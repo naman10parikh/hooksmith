@@ -2,11 +2,16 @@
   "hooks": {
     "PostToolUse": [
       {
-        "matcher": "Write|Edit",
+        "matcher": "Write|Edit|MultiEdit",
         "hooks": [
           {
             "type": "command",
-            "command": "node ~/hooksmith/dist/src/run-log.js write-edit $CLAUDE_TOOL_NAME 2>/dev/null || true"
+            "command": "node \"$CLAUDE_PROJECT_DIR/hooks/settings-guard.mjs\"",
+            "timeout": 10
+          },
+          {
+            "type": "command",
+            "command": "node \"$CLAUDE_PROJECT_DIR/dist/src/run-log.js\" write-edit 2>/dev/null || true"
           }
         ]
       }
@@ -16,7 +21,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "node ~/hooksmith/dist/src/run-log.js session-start 2>/dev/null || true"
+            "command": "node \"$CLAUDE_PROJECT_DIR/dist/src/run-log.js\" session-start 2>/dev/null || true"
           }
         ]
       }
@@ -26,7 +31,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "node ~/hooksmith/dist/src/run-log.js session-end 2>/dev/null || true"
+            "command": "node \"$CLAUDE_PROJECT_DIR/dist/src/run-log.js\" session-end 2>/dev/null || true"
           }
         ]
       }

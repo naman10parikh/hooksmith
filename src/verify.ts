@@ -89,7 +89,7 @@ export async function verifyHooksFire(): Promise<VerifyResult> {
             {
               type: "command",
               command: preToolScript,
-              timeout: 5000,
+              timeout: 5, // seconds
             },
           ],
         },

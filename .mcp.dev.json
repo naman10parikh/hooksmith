@@ -1,0 +1,10 @@
+{
+  "mcpServers": {
+    "hooksmith-dev": {
+      "type": "stdio",
+      "command": "node",
+      "args": ["dist/src/mcp-server.js"],
+      "description": "This checkout's own build (run pnpm build first): hook_generate, hook_lint, hook_test"
+    }
+  }
+}

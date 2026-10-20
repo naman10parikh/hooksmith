@@ -11,6 +11,7 @@
  */
 
 import { describe, it, expect } from "vitest";
+import { execSync } from "child_process";
 import {
   generateHooksBlock,
   detectProjectType,
@@ -143,7 +144,7 @@ describe("Task 2 — Linter catches violations correctly", () => {
       PreToolUse: [
         {
           matcher: "Bash",
-          hooks: [{ type: "command", command: "/usr/bin/true", timeout: 3000 }],
+          hooks: [{ type: "command", command: "/usr/bin/true", timeout: 5 }],
         },
       ],
     };
@@ -181,7 +182,7 @@ describe("Task 2 — Linter catches violations correctly", () => {
       PreToolUse: [
         {
           matcher: "Bash",
-          hooks: [{ type: "command", command: "/usr/bin/true", timeout: 3000 }],
+          hooks: [{ type: "command", command: "/usr/bin/true", timeout: 5 }],
         },
       ],
     };
@@ -283,7 +284,17 @@ describe("Task 3 — Verify harness is importable and returns structured result"
     expect(typeof verifyHooksFire).toBe("function");
   });
 
-  it("result shape is correct when skipped (no claude CLI in CI)", async () => {
+  // A live probe starts a real Claude session, so it runs only on request (HOOKSMITH_LIVE_VERIFY=1). Without a
+  // claude CLI (CI) the call returns a structured skip at once, so the shape is still checked there.
+  const hasClaude = (() => {
+    try {
+      execSync("command -v claude", { stdio: "ignore" });
+      return true;
+    } catch {
+      return false;
+    }
+  })();
+  it.skipIf(hasClaude && process.env.HOOKSMITH_LIVE_VERIFY !== "1")("result shape is correct when skipped (no claude CLI in CI)", async () => {
     // In CI or sandbox, claude CLI won't be available — expect a structured skip
     const { verifyHooksFire } = await import("../src/verify.js");
     const result = await verifyHooksFire();
@@ -297,5 +308,52 @@ describe("Task 3 — Verify harness is importable and returns structured result"
     if (result.skipped) {
       expect(result.skipReason).toBeTruthy();
     }
+  });
+});
+
+// ─── Task 4: Current Claude Code hooks (events, handler types, timeout units) ──
+
+describe("Task 4 — the linter matches Claude Code as of October 2026", () => {
+  it("newer events are valid (UserPromptSubmit, PostToolUseFailure, SubagentStart, PreModelSwitch)", () => {
+    const hook = { hooks: [{ type: "command", command: "/usr/bin/true" }] };
+    const result = lintHooksBlock({ UserPromptSubmit: [hook], PostToolUseFailure: [hook], SubagentStart: [hook], PreModelSwitch: [hook] });
+    expect(result.violations.filter((v) => v.code === "UNKNOWN_EVENT")).toEqual([]);
+  });
+
+  it("http, prompt, agent and mcp_tool handlers are valid when their required field is set", () => {
+    const result = lintHooksBlock({
+      Stop: [
+        {
+          hooks: [
+            { type: "http", url: "https://example.com/hook" },
+            { type: "prompt", prompt: "Did the task finish?" },
+            { type: "agent", prompt: "Verify the tests pass" },
+            { type: "mcp_tool", server: "memory", tool: "save" },
+          ],
+        },
+      ],
+    });
+    expect(result.errorCount).toBe(0);
+  });
+
+  it("MISSING_FIELD: an mcp_tool hook without a tool is an error", () => {
+    const result = lintHooksBlock({ Stop: [{ hooks: [{ type: "mcp_tool", server: "memory" }] }] });
+    const v = result.violations.find((x) => x.code === "MISSING_FIELD");
+    expect(v?.path).toBe("hooks.Stop[0].hooks[0].tool");
+  });
+
+  it("TIMEOUT_IN_MILLISECONDS: a timeout of 3000 is read as 50 minutes and flagged", () => {
+    const result = lintHooksBlock({
+      PreToolUse: [{ matcher: "Bash", hooks: [{ type: "command", command: "/usr/bin/true", timeout: 3000 }] }],
+    });
+    const v = result.violations.find((x) => x.code === "TIMEOUT_IN_MILLISECONDS");
+    expect(v?.severity).toBe("warning");
+    expect(v?.message).toMatch(/use 3\./);
+  });
+
+  it("every generated timeout is in seconds (at most the 600-second default)", () => {
+    const block = generateHooksBlock({ projectType: "nextjs", recipes: ["all"], hooksDir: "/project/.claude/hooks" });
+    const timeouts = Object.values(block).flatMap((ms) => (ms ?? []).flatMap((m) => m.hooks.map((h) => h.timeout)));
+    expect(timeouts.filter((t) => t !== undefined && t > 600)).toEqual([]);
   });
 });

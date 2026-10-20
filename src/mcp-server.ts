@@ -6,6 +6,7 @@
  * Tools:
  *   hook_generate  — generate a hooks block for a project root
  *   hook_lint      — lint an existing settings.json hooks block
+ *   hook_test      — fire one hook with a synthetic event and decode its decision (local or E2B)
  *
  * Protocol: MCP 2024-11-05 (JSON-RPC 2.0 over stdio)
  * Zero runtime dependencies — uses only Node built-ins + hooksmith's own modules.
@@ -15,6 +16,7 @@ import * as readline from "readline";
 import { generateHooksBlock, detectProjectType } from "./generator.js";
 import { lintHooksBlock, formatLintResult } from "./linter.js";
 import { appendRunLog } from "./run-log.js";
+import { fireTest, type FireTestInput } from "./fire-test.js";
 import { readFileSync } from "fs";
 import { resolve } from "path";
 
@@ -92,7 +94,37 @@ const TOOLS = [
       required: ["settingsPath"],
     },
   },
+  {
+    name: "hook_test",
+    description:
+      "Fire one hook the way Claude Code would: send it a synthetic event as JSON on stdin and decode its " +
+      "decision (block, deny, ask, allow, defer or pass) from its exit code and output. " +
+      "Set sandbox to \"e2b\" to run it inside a fresh E2B microVM instead of this machine.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        command: { type: "string", description: "The hook command, as written in settings.json" },
+        event: { type: "string", description: "Hook event to simulate (default PreToolUse)" },
+        toolName: { type: "string", description: "Tool name for tool events (default Bash)" },
+        toolInput: { type: "object", description: "Tool arguments, e.g. { \"command\": \"rm -rf /\" }" },
+        cwd: { type: "string", description: "Project directory the hook runs in" },
+        sandbox: { type: "string", enum: ["local", "e2b"], description: "Where to run it (default local)" },
+      },
+      required: ["command"],
+    },
+  },
 ];
+
+async function handleHookTest(params: Record<string, unknown>): Promise<{ content: Array<{ type: "text"; text: string }> }> {
+  const input: FireTestInput = { command: String(params["command"] ?? "") };
+  if (typeof params["event"] === "string") input.event = params["event"];
+  if (typeof params["toolName"] === "string") input.toolName = params["toolName"];
+  if (params["toolInput"] && typeof params["toolInput"] === "object") input.toolInput = params["toolInput"] as Record<string, unknown>;
+  if (typeof params["cwd"] === "string") input.cwd = params["cwd"];
+  if (params["sandbox"] === "e2b") input.sandbox = "e2b";
+  const r = await fireTest(input);
+  return { content: [{ type: "text", text: JSON.stringify(r, null, 2) }] };
+}
 
 // ── Tool handlers ──────────────────────────────────────────────────────────
 
@@ -217,6 +249,8 @@ function dispatch(req: JsonRpcRequest): string {
 // ── stdio transport ────────────────────────────────────────────────────────
 
 const rl = readline.createInterface({ input: process.stdin, crlfDelay: Infinity });
+let pending = 0;
+let closed = false;
 
 rl.on("line", (line) => {
   const trimmed = line.trim();
@@ -232,6 +266,19 @@ rl.on("line", (line) => {
     return;
   }
 
+  if (req.method === "tools/call" && req.params?.["name"] === "hook_test") {
+    const toolArgs = (req.params["arguments"] ?? {}) as Record<string, unknown>;
+    pending++;
+    void handleHookTest(toolArgs)
+      .then((result) => process.stdout.write(respond(req.id, result) + "\n"))
+      .catch((err: unknown) => process.stdout.write(respondError(req.id, -32603, err instanceof Error ? err.message : String(err)) + "\n"))
+      .finally(() => {
+        pending--;
+        if (closed && pending === 0) process.exit(0);
+      });
+    return;
+  }
+
   const out = dispatch(req);
   if (out) {
     process.stdout.write(out + "\n");
@@ -239,5 +286,6 @@ rl.on("line", (line) => {
 });
 
 rl.on("close", () => {
-  process.exit(0);
+  closed = true;
+  if (pending === 0) process.exit(0); // otherwise exit once the last async tool call answers
 });

@@ -3,7 +3,9 @@
  *
  * Violations:
  *   - Unknown event names (typos like "preToolUse" instead of "PreToolUse")
+ *   - Unknown handler types, and handlers missing their required field (command, url, prompt, server+tool)
  *   - PreToolUse Bash hooks missing `timeout` (they run before EVERY tool call)
+ *   - Timeouts written in milliseconds (Claude Code reads seconds, so 3000 means 50 minutes)
  *   - Hook script paths that don't exist on disk
  *   - Hook scripts that aren't executable (POSIX only — skipped on Windows)
  *   - Empty hooks arrays
@@ -32,15 +34,55 @@ export interface LintResult {
 
 // ── Known event names ──────────────────────────────────────────────────────
 
-const VALID_EVENTS = new Set([
+// Every event Claude Code fires, as of 19 October 2026: code.claude.com/docs/en/hooks (33 events) and the
+// settings schema at json.schemastore.org/claude-code-settings.json (31; it lacks the two model-switch events).
+export const VALID_EVENTS = new Set([
+  "Setup",
   "SessionStart",
+  "UserPromptSubmit",
+  "UserPromptExpansion",
   "PreToolUse",
+  "PermissionRequest",
+  "PermissionDenied",
   "PostToolUse",
-  "PreCompact",
+  "PostToolUseFailure",
+  "PostToolBatch",
   "Stop",
   "StopFailure",
+  "SubagentStart",
+  "SubagentStop",
+  "TaskCreated",
+  "TaskCompleted",
+  "TeammateIdle",
+  "Notification",
+  "MessageDisplay",
+  "InstructionsLoaded",
+  "ConfigChange",
+  "CwdChanged",
+  "DirectoryAdded",
+  "FileChanged",
+  "WorktreeCreate",
+  "WorktreeRemove",
+  "PreCompact",
+  "PostCompact",
+  "PreModelSwitch",
+  "PostModelSwitch",
+  "Elicitation",
+  "ElicitationResult",
   "SessionEnd",
 ]);
+
+// Handler types and the field each one requires (from the same schema).
+const REQUIRED_FIELDS: Record<string, string[]> = {
+  command: ["command"],
+  http: ["url"],
+  mcp_tool: ["server", "tool"],
+  prompt: ["prompt"],
+  agent: ["prompt"],
+};
+
+/** Claude Code's default hook timeout, in seconds. A larger value was almost always meant as milliseconds. */
+const DEFAULT_TIMEOUT_SECONDS = 600;
 
 // ── Linter ─────────────────────────────────────────────────────────────────
 
@@ -113,14 +155,33 @@ export function lintHooksBlock(hooksBlock: Record<string, any>): LintResult {
         const hook = matcher.hooks[hi];
         const hookPath = `${matcherPath}.hooks[${hi}]`;
 
-        if (hook.type !== "command") {
+        const required = REQUIRED_FIELDS[String(hook.type)];
+        if (!required) {
           add(
             "error",
             "INVALID_HOOK_TYPE",
-            `Hook type "${hook.type}" is not supported. Only "command" is valid.`,
+            `Hook type "${hook.type}" is not supported. Valid types: ${Object.keys(REQUIRED_FIELDS).join(", ")}.`,
             `${hookPath}.type`,
           );
           continue;
+        }
+
+        if (typeof hook.timeout === "number" && hook.timeout > DEFAULT_TIMEOUT_SECONDS) {
+          add(
+            "warning",
+            "TIMEOUT_IN_MILLISECONDS",
+            `Timeout ${hook.timeout} is read as seconds (${Math.round(hook.timeout / 60)} minutes). If you meant milliseconds, use ${Math.max(1, Math.round(hook.timeout / 1000))}.`,
+            `${hookPath}.timeout`,
+          );
+        }
+
+        if (hook.type !== "command") {
+          for (const field of required) {
+            if (typeof hook[field] !== "string" || hook[field].trim() === "") {
+              add("error", "MISSING_FIELD", `A "${hook.type}" hook needs a "${field}" string`, `${hookPath}.${field}`);
+            }
+          }
+          continue; // the script checks below apply to command hooks only
         }
 
         if (typeof hook.command !== "string" || hook.command.trim() === "") {
@@ -137,7 +198,7 @@ export function lintHooksBlock(hooksBlock: Record<string, any>): LintResult {
           add(
             "warning",
             "MISSING_TIMEOUT",
-            `PreToolUse Bash hook should specify a timeout (e.g., 3000ms) to avoid blocking all tool calls indefinitely`,
+            `PreToolUse Bash hook should specify a timeout in seconds (e.g., 5) to avoid blocking all tool calls`,
             `${hookPath}.timeout`,
           );
         }

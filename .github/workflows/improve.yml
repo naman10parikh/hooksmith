@@ -1,0 +1,43 @@
+name: Improve
+# The improvement loop: every night, re-run the evals, fire hooksmith's own hooks, and compare the hook events
+# the linter knows with Claude Code's published settings schema. Drift becomes an issue with a proposed change.
+# It opens issues only; a person reviews and lands every change.
+on:
+  schedule:
+    - cron: "17 9 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  improve:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - run: pnpm install --no-frozen-lockfile
+      - run: pnpm build
+      - run: pnpm eval
+      - run: node dist/src/cli.js test --settings=.claude/settings.json
+      - name: Compare hook events with the published schema
+        id: drift
+        run: |
+          set +e
+          node scripts/event-drift.mjs --out proposal.md
+          code=$?
+          if [ "$code" -eq 3 ]; then echo "drift=true" >> "$GITHUB_OUTPUT"; elif [ "$code" -ne 0 ]; then exit "$code"; fi
+      - name: Open a proposal issue
+        if: steps.drift.outputs.drift == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          title="hooksmith: Claude Code has hook events the linter does not know"
+          open=$(gh issue list --state open --search "\"$title\" in:title" --json number --jq 'length')
+          if [ "$open" = "0" ]; then gh issue create --title "$title" --body-file proposal.md; fi

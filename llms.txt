@@ -1,25 +1,32 @@
 # hooksmith
 
-> Private. The lifecycle-hook generator, linter, and verifier for Claude Code — the
-> "hooks" component of the Energy fleet.
+> Generate, lint and fire-test lifecycle hooks for coding agents: the hooks part of an agent's harness, as a CLI, an MCP server, three skills and a Claude Code plugin.
 
-## Documentation
+## Start here
 
-- [README.md](README.md): Overview, quick start, recipe catalog, linter violations
-- [AGENTS.md](AGENTS.md): Directory structure, key concepts, how-to guide
-- [CLAUDE.md](CLAUDE.md): Operating handbook for agents — build, test, scope boundaries
-- [identity/SOUL.md](identity/SOUL.md): Who hooksmith is and what it owns
-- [identity/MEMORY.md](identity/MEMORY.md): Hook events reference + recipe catalog
+- [AGENTS.md](AGENTS.md): what hooksmith does, every tool and how to call it, what not to do
+- [README.md](README.md): overview, quick start, the recipe catalog and linter violations
+- [identity/SOUL.md](identity/SOUL.md): who hooksmith is, what it owns, its boundaries
 
-## Core Artifact
+## Skills
 
-- [src/generator.ts](src/generator.ts): `generateHooksBlock()` — emit a hooks block
-- [src/linter.ts](src/linter.ts): `lintHooksBlock()` — validate a hooks block
-- [src/verify.ts](src/verify.ts): `verifyHooksFire()` — prove hooks fire
-- [catalog/recipes.json](catalog/recipes.json): Machine-readable recipe registry
+- [skills/hook-generate/SKILL.md](skills/hook-generate/SKILL.md): generate a hooks block for a project from the recipe catalog
+- [skills/hook-lint/SKILL.md](skills/hook-lint/SKILL.md): lint a hooks block against today's 33 events and 5 handler types
+- [skills/hook-fire-test/SKILL.md](skills/hook-fire-test/SKILL.md): fire a hook with a synthetic event and read its decision, locally or in E2B
 
-## Notes
+## MCP tools
 
-- This file follows the llms.txt convention (https://llmstxt.org)
-- hooksmith is a meta-harness: it improves OTHER harnesses' hook blocks
-- The owned artifact is a generator + linter + test harness (TypeScript, no framework deps)
+- [src/mcp-server.ts](src/mcp-server.ts): `hooksmith-mcp` with `hook_generate`, `hook_lint` and `hook_test`
+
+## Code
+
+- [src/generator.ts](src/generator.ts): `generateHooksBlock()`, emit a hooks block
+- [src/linter.ts](src/linter.ts): `lintHooksBlock()`, validate a hooks block; `VALID_EVENTS`
+- [src/fire-test.ts](src/fire-test.ts): `fireTest()`, run one hook the way Claude Code would
+- [catalog/recipes.json](catalog/recipes.json): the machine-readable recipe registry
+
+## Optional
+
+- [identity/MEMORY.md](identity/MEMORY.md): bootstrap facts, hook events, the recipe table
+- [identity/LEARNINGS.md](identity/LEARNINGS.md): corrections that became rules
+- [dsip.json](dsip.json): the self-improvement contract

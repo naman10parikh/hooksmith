@@ -1,0 +1,22 @@
+{
+  "dsip": "0.1",
+  "product": "hooksmith",
+  "levels": ["agent"],
+  "loop": {
+    "cadence": "nightly",
+    "steps": ["review", "extract", "prioritize", "validate", "ship"]
+  },
+  "selection": "performance",
+  "eval": {
+    "rubric": "evals/eval.ts",
+    "gate": "pnpm test && pnpm eval pass in CI on every pull request"
+  },
+  "snapback": {
+    "granularity": ["skill"],
+    "vcs": "git"
+  },
+  "externalIntelligence": {
+    "enabled": true,
+    "source": "https://json.schemastore.org/claude-code-settings.json (read nightly by scripts/event-drift.mjs)"
+  }
+}

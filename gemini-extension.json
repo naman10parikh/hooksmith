@@ -1,0 +1,17 @@
+{
+  "name": "hooksmith",
+  "version": "0.1.0",
+  "description": "Generate, lint and fire-test lifecycle hooks for coding agents.",
+  "contextFileName": "GEMINI.md",
+  "mcpServers": {
+    "hooksmith": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "-p",
+        "github:naman10parikh/hooksmith",
+        "hooksmith-mcp"
+      ]
+    }
+  }
+}

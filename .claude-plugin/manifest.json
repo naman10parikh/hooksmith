@@ -2,7 +2,7 @@
   "name": "hooksmith",
   "version": "0.1.0",
   "description": "Lifecycle-hook generator, linter, and verifier for Claude Code",
-  "author": "Energy fleet",
+  "author": "Naman Parikh",
   "cli": {
     "binary": "hooksmith",
     "entrypoint": "./dist/src/cli.js",
@@ -18,6 +18,11 @@
         "usage": "hooksmith lint [settings.json path]"
       },
       {
+        "name": "test",
+        "description": "Fire one hook (or every hook in a settings file) with a synthetic event and report its decision; --sandbox=e2b runs it in a microVM",
+        "usage": "hooksmith test \"<hook command>\" [--event=PreToolUse] [--input='{...}'] [--expect=block] [--sandbox=e2b] | hooksmith test --settings=<file>"
+      },
+      {
         "name": "verify",
         "description": "Run a live probe to confirm PreToolUse + PostToolUse actually fire",
         "usage": "hooksmith verify"
@@ -25,11 +30,13 @@
     ]
   },
   "skills": [
-    ".claude/skills/hook-generate/SKILL.md",
-    ".claude/skills/hook-lint/SKILL.md"
+    "skills/hook-generate/SKILL.md",
+    "skills/hook-lint/SKILL.md",
+    "skills/hook-fire-test/SKILL.md"
   ],
   "subAgents": [
-    ".claude/sub-agents/hook-reviewer.md"
+    ".claude/agents/hook-reviewer.md",
+    ".claude/agents/hook-fire-tester.md"
   ],
   "catalog": "./catalog/recipes.json",
   "keywords": ["claude-code", "hooks", "lifecycle", "harness", "settings"]

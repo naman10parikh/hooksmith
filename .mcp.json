@@ -1,10 +1,8 @@
 {
   "mcpServers": {
     "hooksmith": {
-      "type": "stdio",
-      "command": "node",
-      "args": ["~/hooksmith/dist/src/mcp-server.js"],
-      "description": "Hooksmith MCP — exposes hook-generate and hook-lint as MCP tools"
+      "command": "npx",
+      "args": ["-y", "-p", "github:naman10parikh/hooksmith", "hooksmith-mcp"]
     }
   }
 }
