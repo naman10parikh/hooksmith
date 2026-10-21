@@ -8,8 +8,8 @@
 ## The 3-artifact protocol
 
 1. **The task description** — the approach before any code change
-2. **TODOS.md** — the shared queue: CLAIM → WORK → CLOSE with evidence
-3. **IMPLEMENTATION-LOG.md** — append `{did / why / evidence / next}` on every meaningful action
+2. **The work queue** (the maintainer keeps it outside the public repository): CLAIM → WORK → CLOSE with evidence
+3. **The implementation log** (kept with the maintainer) — append `{did / why / evidence / next}` on every meaningful action
 
 ## The Four Things (Karpathy — before/during ANY code change)
 
